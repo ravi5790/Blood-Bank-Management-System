@@ -168,6 +168,16 @@ class RequestRespondIn(BaseModel):
     message: Optional[str] = None
 
 
+class BloodDriveIn(BaseModel):
+    title: str
+    description: Optional[str] = None
+    date: str  # ISO date string
+    time: Optional[str] = None
+    city: str
+    address: Optional[str] = None
+    blood_groups_needed: List[str] = Field(default_factory=list)
+
+
 # ---- App ----
 app = FastAPI(title="BloodLink API")
 api = APIRouter(prefix="/api")
@@ -411,6 +421,79 @@ async def admin_requests(user: dict = Depends(require_role("admin"))):
 
 
 # ---- Analytics ----
+# ---- Blood Drives ----
+@api.get("/drives")
+async def list_drives(city: Optional[str] = None, blood_group: Optional[str] = None):
+    query: dict = {}
+    if city:
+        query["city"] = {"$regex": f"^{city}", "$options": "i"}
+    if blood_group:
+        query["blood_groups_needed"] = blood_group
+    cursor = db.drives.find(query, {"_id": 0}).sort("date", 1)
+    return await cursor.to_list(500)
+
+
+@api.post("/drives")
+async def create_drive(payload: BloodDriveIn, user: dict = Depends(require_role("hospital"))):
+    drive_id = str(uuid.uuid4())
+    doc = {
+        "id": drive_id,
+        "hospital_id": user["id"],
+        "hospital_name": user["name"],
+        "title": payload.title,
+        "description": payload.description,
+        "date": payload.date,
+        "time": payload.time,
+        "city": payload.city,
+        "address": payload.address,
+        "blood_groups_needed": payload.blood_groups_needed,
+        "created_at": now_iso(),
+    }
+    await db.drives.insert_one(doc)
+
+    # Notify matching donors (same city prefix + any of needed blood groups)
+    donor_query: dict = {"role": "donor", "available": True}
+    if payload.blood_groups_needed:
+        donor_query["blood_group"] = {"$in": payload.blood_groups_needed}
+    if payload.city:
+        donor_query["city"] = {"$regex": f"^{payload.city}", "$options": "i"}
+    cursor = db.users.find(donor_query, {"_id": 0, "password_hash": 0}).limit(200)
+    donors = await cursor.to_list(200)
+
+    subject = f"Blood drive near you · {payload.title}"
+    for d in donors:
+        if not d.get("email"):
+            continue
+        body = (
+            f"<b>{user['name']}</b> is hosting a blood drive on <b>{payload.date}"
+            f"{(' at ' + payload.time) if payload.time else ''}</b> in <b>{payload.city}</b>."
+            f"<br/><br/>{payload.description or ''}"
+            f"<br/><br/>Blood groups needed: <b>{', '.join(payload.blood_groups_needed) or 'All'}</b>"
+            f"<br/>Address: {payload.address or '—'}"
+        )
+        await send_email(d["email"], subject, request_email_html(f"You're invited: {payload.title}", body))
+
+    logger.info(f"Drive {drive_id} created by {user['email']} · notified {len(donors)} donors")
+    return {**serialize({**doc}), "notified_donors": len(donors)}
+
+
+@api.delete("/drives/{drive_id}")
+async def delete_drive(drive_id: str, user: dict = Depends(get_current_user)):
+    drive = await db.drives.find_one({"id": drive_id})
+    if not drive:
+        raise HTTPException(status_code=404, detail="Drive not found")
+    if drive["hospital_id"] != user["id"] and user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    await db.drives.delete_one({"id": drive_id})
+    return {"ok": True}
+
+
+@api.get("/drives/mine")
+async def my_drives(user: dict = Depends(require_role("hospital"))):
+    cursor = db.drives.find({"hospital_id": user["id"]}, {"_id": 0}).sort("date", 1)
+    return await cursor.to_list(500)
+
+
 @api.get("/analytics/overview")
 async def analytics_overview():
     total_donors = await db.users.count_documents({"role": "donor"})
@@ -476,6 +559,8 @@ async def on_startup():
     await db.requests.create_index("requester_id")
     await db.requests.create_index("target_id")
     await db.inventories.create_index("hospital_id", unique=True)
+    await db.drives.create_index("date")
+    await db.drives.create_index("city")
     # seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@bloodbank.com").lower()
     admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
