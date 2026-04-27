@@ -21,9 +21,9 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 # ---- DB ----
-mongo_url = mongodb+srv://ravikr5299_db_user:<db_password>@bloodlink.ol0k1il.mongodb.net/?appName=BloodLink
+mongo_url = "mongodb+srv://ravikr5299_db_user:<db_password>@bloodlink.ol0k1il.mongodb.net/?appName=BloodLink"
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+db = client[os.environ["DB_NAME"], "BloodLink" ]
 
 JWT_ALGORITHM = "HS256"
 BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
