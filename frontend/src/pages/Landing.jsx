@@ -129,7 +129,7 @@ export default function Landing() {
       </section>
 
       <footer className="py-10 text-center text-sm text-neutral-500 border-t border-[var(--line)]">
-        <span className="font-mono-thin">© BloodLink · A non-profit demonstration project</span>
+        <span className="font-mono-thin">© BloodLink · By Ravi Kant Kumar (Aarav Technologies) </span>
       </footer>
     </div>
   );
