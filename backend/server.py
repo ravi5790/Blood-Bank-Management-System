@@ -9,6 +9,8 @@ import uuid
 import logging
 import bcrypt
 import jwt
+import asyncio
+import resend
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Literal
 
@@ -26,6 +28,37 @@ db = client[os.environ["DB_NAME"]]
 JWT_ALGORITHM = "HS256"
 BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 Role = Literal["donor", "receiver", "hospital", "admin"]
+
+# ---- Email (Resend) ----
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+
+
+async def send_email(to: str, subject: str, html: str):
+    if not resend.api_key or not to:
+        return None
+    params = {"from": SENDER_EMAIL, "to": [to], "subject": subject, "html": html}
+    try:
+        return await asyncio.to_thread(resend.Emails.send, params)
+    except Exception as e:
+        logging.getLogger("bloodbank").warning(f"Resend failed: {e}")
+        return None
+
+
+def request_email_html(title: str, body: str, cta: str = "") -> str:
+    return f"""
+    <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:28px;background:#ffffff;border:1px solid #e9e6e0;border-radius:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:32px;height:32px;border-radius:8px;background:#c8102e;color:white;display:inline-flex;align-items:center;justify-content:center;font-weight:700">B</div>
+        <div style="font-weight:700;font-size:18px;letter-spacing:-0.02em">BloodLink</div>
+      </div>
+      <h1 style="font-size:26px;font-weight:800;margin:0 0 12px 0;letter-spacing:-0.02em">{title}</h1>
+      <p style="color:#4b5563;line-height:1.6;margin:0 0 16px 0">{body}</p>
+      {cta}
+      <hr style="border:none;border-top:1px dashed #e9e6e0;margin:24px 0" />
+      <p style="color:#9ca3af;font-size:12px;margin:0">Sent from BloodLink · a drop saves a life</p>
+    </div>
+    """
 
 
 # ---- Helpers ----
@@ -343,7 +376,16 @@ async def respond_request(request_id: str, payload: RequestRespondIn, user: dict
                 if it["blood_group"] == req["blood_group"]:
                     it["units"] = max(0, it["units"] - req["units"])
             await db.inventories.update_one({"hospital_id": user["id"]}, {"$set": {"items": items}})
-    logger.info(f"[EMAIL-MOCKED] Request {request_id} {payload.status} - notify {req['requester_email']}")
+    logger.info(f"Request {request_id} {payload.status} by {user['email']}")
+    # Notify requester via Resend
+    await send_email(
+        req["requester_email"],
+        f"Your blood request was {payload.status}",
+        request_email_html(
+            f"Request {payload.status}",
+            f"Your request for <b>{req['units']} unit(s)</b> of <b>{req['blood_group']}</b> was <b>{payload.status}</b> by <b>{user['name']}</b>.<br/><br/>{('Message: ' + payload.message) if payload.message else ''}",
+        ),
+    )
     return {"ok": True, "status": payload.status}
 
 

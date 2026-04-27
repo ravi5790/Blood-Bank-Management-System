@@ -48,7 +48,7 @@ export const Navbar = () => {
                 </div>
                 <span className="font-medium hidden sm:inline" data-testid="user-name">{user.name}</span>
               </Link>
-              <Button variant="ghost" size="sm" onClick={async () => { await logout(); nav("/"); }} data-testid="logout-btn">
+              <Button variant="ghost" size="sm" onClick={async () => { await logout(); window.location.href = "/"; }} data-testid="logout-btn">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
