@@ -49,6 +49,7 @@ export function AuthProvider({ children }) {
   async function logout() {
     try { await api.post("/auth/logout"); } catch {}
     localStorage.removeItem("bb_token");
+    delete api.defaults.headers.common.Authorization;
     setUser(false);
   }
 
