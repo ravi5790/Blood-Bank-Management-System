@@ -40,7 +40,7 @@ export default function SearchPage() {
     } finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [load]);
 
   function search(e) {
     e.preventDefault();
