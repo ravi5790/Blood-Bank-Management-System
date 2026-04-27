@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { api, BLOOD_GROUPS } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -26,21 +26,28 @@ export default function SearchPage() {
   const [units, setUnits] = useState(1);
   const [notes, setNotes] = useState("");
 
-  async function load() {
-    setLoading(true);
-    try {
-      const q = new URLSearchParams();
-      if (bg && bg !== "any") q.set("blood_group", bg);
-      if (city) q.set("city", city);
-      const [h, d] = await Promise.all([
-        api.get(`/hospitals?${q.toString()}`),
-        api.get(`/donors?${q.toString()}`),
-      ]);
-      setHospitals(h.data); setDonors(d.data);
-    } finally { setLoading(false); }
-  }
+ const load = useCallback(async () => {
+  setLoading(true);
+  try {
+    const q = new URLSearchParams();
+    if (bg && bg !== "any") q.set("blood_group", bg);
+    if (city) q.set("city", city);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [load]);
+    const [h, d] = await Promise.all([
+      api.get(`/hospitals?${q.toString()}`),
+      api.get(`/donors?${q.toString()}`),
+    ]);
+
+    setHospitals(h.data);
+    setDonors(d.data);
+  } finally {
+    setLoading(false);
+  }
+}, [bg, city]);
+
+  useEffect(() => { 
+    load(); /* eslint-disable-next-line */ 
+  }, [load]);
 
   function search(e) {
     e.preventDefault();
