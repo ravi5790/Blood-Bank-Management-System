@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 
 # ---- DB ----
-mongo_url = "mongodb+srv://ravikr5299_db_user:YyFF78ltHUK8itBY@bloodlink.ol0k1il.mongodb.net/?appName=BloodLink"
+mongo_url = "mongodb+srv://ravikr5299_db_user:Aarav90655@/?appName=BloodLink"
 client = AsyncIOMotorClient(mongo_url)
 db = client[ "BloodLink" ]
 
