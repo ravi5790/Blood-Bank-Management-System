@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --crimson: #c8102e;
+  --crimson-dark: #8b0a1f;
+  --crimson-soft: #fef2f3;
+  --ink: #0b0b0d;
+  --paper: #ffffff;
+  --bone: #faf7f2;
+  --line: #e9e6e0;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.font-display {
+  font-family: 'Bricolage Grotesque', serif;
+  font-variation-settings: "opsz" 24;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-thin {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--crimson);
+  color: white;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 351 86% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 36 33% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 36 20% 95%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 351 90% 96%;
+    --accent-foreground: 351 86% 30%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 20% 90%;
+    --input: 36 20% 90%;
+    --ring: 351 86% 42%;
+    --chart-1: 351 86% 42%;
+    --chart-2: 22 90% 55%;
+    --chart-3: 200 70% 45%;
+    --chart-4: 270 60% 55%;
+    --chart-5: 150 50% 45%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Subtle paper texture */
+.paper-bg {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(circle at 0.5px 0.5px, rgba(11,11,13,0.05) 0.5px, transparent 0);
+  background-size: 14px 14px;
+}
+
+.bone-bg {
+  background-color: var(--bone);
+}
+
+/* Pill chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: white;
+  transition: all 0.18s ease;
+}
+.chip:hover { border-color: var(--crimson); color: var(--crimson); }
+.chip-active { background: var(--crimson); color: white; border-color: var(--crimson); }
+
+.divider-dotted {
+  border-top: 1px dashed var(--line);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: #16a34a;
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-up { animation: slide-up 0.5s ease both; }
