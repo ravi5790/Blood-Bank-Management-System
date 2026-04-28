@@ -2,6 +2,7 @@ import "./App.css";
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "./context/AuthContext";
 import { Navbar } from "./components/Navbar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -39,6 +40,7 @@ function App() {
               <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
             } />
           </Routes>
+          <Analytics />
         </AuthProvider>
       </BrowserRouter>
     </div>
